@@ -1,2 +1,4 @@
 .env
+.venv
 NPFC-Test_Database_V2.csv
+outputs/figures/*
