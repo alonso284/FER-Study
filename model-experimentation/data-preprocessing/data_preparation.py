@@ -3,7 +3,7 @@ import pandas as pd
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Cleans the data by handling missing values, removing duplicates, and filtering outliers.
+    Cleans the data by handling missing values, NaN, etc.
     In addition, removes rows with neutral predictions (50~ % of the data) to avoid inflated confidence on trivial predictions.
     """
     # @SergioGzzBrz
