@@ -1,5 +1,7 @@
 import pandas as pd
 
+# This two things are based on https://pmc.ncbi.nlm.nih.gov/articles/PMC7349550/#:~:text=Notwithstanding%2C%20not,process
+
 
 def variance_treshold_selection(df: pd.DataFrame) -> pd.DataFrame:
     """
