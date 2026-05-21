@@ -6,6 +6,7 @@ NPFC-Test_Database_V2.csv
 
 # Generated outputs (reproducible from notebook)
 cache/
+__pycache__/
 outputs/figures/*
 
 # Model artifacts (downloaded at runtime by rmn/deepface)
