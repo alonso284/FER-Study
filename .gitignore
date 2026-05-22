@@ -16,3 +16,7 @@ res10_300x300_ssd_iter_140000.caffemodel
 
 # Trash
 .DS_Store
+
+# Personal testing files
+sergio_tests.ipynb
+sergio_TODO.txt
