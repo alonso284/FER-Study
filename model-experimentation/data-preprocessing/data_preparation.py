@@ -26,14 +26,16 @@ GENDER = {
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     """
+    Created the prediction labels that will be used for model training.
     Cleans the data by handling missing values, NaN, etc.
     In addition, removes rows with neutral predictions (50~ % of the data) to avoid inflated confidence on trivial predictions.
-    Also changes string values to numerical values
+    Changes string values to numerical values.
     """
-    df = df[df["Face_Detection"] == 1]
-    df = df[df["HeadBandOn"] == 1]
+    filtered_df = df[df["Face_Detection"] == 1]
+    filtered_df = df[df["HeadBandOn"] == 1]
+    df_clean = filtered_df.copy()
 
-    # Get the certainty o prediction
+    # Get the prediction value
     emotion_cols = [
         "resmasknet_anger",
         "resmasknet_disgust",
@@ -44,21 +46,25 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
         "resmasknet_neutral",
     ]
 
-    df["resmasknet_max_emotion_value"] = df[emotion_cols].max(axis=1)
-    df["resmasknet_dominant_emotion"] = df[emotion_cols].idxmax(axis=1)
+    df_clean = df_clean.dropna(subset=emotion_cols, how="all")
+
+    df_clean["resmasknet_max_emotion_value"] = df_clean[emotion_cols].max(axis=1)
+    df_clean["resmasknet_dominant_emotion"] = df_clean[emotion_cols].idxmax(axis=1)
 
     # Clean neutral predictions
-    df = df[df["resmasknet_dominant_emotion"] != "resmasknet_neutral"]
+    df_clean = df_clean[df_clean["resmasknet_dominant_emotion"] != "resmasknet_neutral"]
 
-    df["Perceived_Tiredness"] = (
-        df["Perceived_Tiredness"].map(PERCEIVED_TIREDNESS).astype("Int64")
+    df_clean["Perceived_Tiredness"] = (
+        df_clean["Perceived_Tiredness"].map(PERCEIVED_TIREDNESS).astype("Int64")
     )
-    df["Perceived_Stress"] = (
-        df["Perceived_Stress"].map(PERCEIVED_STRESS).astype("Int64")
+    df_clean["Perceived_Stress"] = (
+        df_clean["Perceived_Stress"].map(PERCEIVED_STRESS).astype("Int64")
     )
-    df["Gender"] = df["Gender"].map(GENDER).astype("Int64")
-    df["Wearing_Glasses"] = df["Wearing_Glasses"].map(WEARING_GLASSES).astype("Int64")
-    return df
+    df_clean["Gender"] = df_clean["Gender"].map(GENDER).astype("Int64")
+    df_clean["Wearing_Glasses"] = (
+        df_clean["Wearing_Glasses"].map(WEARING_GLASSES).astype("Int64")
+    )
+    return df_clean
 
 
 def align_lag_signals(df: pd.DataFrame) -> pd.DataFrame:
