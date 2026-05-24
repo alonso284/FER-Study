@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import pearsonr
+
 PERCEIVED_TIREDNESS = {
     "Not tired": 0,
     "Slightly tired": 1,
@@ -24,7 +25,6 @@ GENDER = {
     "Female": 1,
 }
 
-
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Cleans the data by handling missing values, NaN, etc.
@@ -36,20 +36,20 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # Get the certainty o prediction
     emotion_cols = [
-        "resmasknet_anger",
-        "resmasknet_disgust",
-        "resmasknet_fear",
-        "resmasknet_happiness",
-        "resmasknet_sadness",
-        "resmasknet_surprise",
-        "resmasknet_neutral",
+        "resmasknet_anger_aligned",
+        "resmasknet_disgust_aligned",
+        "resmasknet_fear_aligned",
+        "resmasknet_happiness_aligned",
+        "resmasknet_sadness_aligned",
+        "resmasknet_surprise_aligned",
+        "resmasknet_neutral_aligned",
     ]
 
     df["resmasknet_max_emotion_value"] = df[emotion_cols].max(axis=1)
     df["resmasknet_dominant_emotion"] = df[emotion_cols].idxmax(axis=1)
 
     # Clean neutral predictions
-    df = df[df["resmasknet_dominant_emotion"] != "resmasknet_neutral"]
+    df = df[df["resmasknet_dominant_emotion"] != "resmasknet_neutral_aligned"]
 
     df["Perceived_Tiredness"] = (
         df["Perceived_Tiredness"].map(PERCEIVED_TIREDNESS).astype("Int64")
@@ -61,7 +61,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     df["Wearing_Glasses"] = df["Wearing_Glasses"].map(WEARING_GLASSES).astype("Int64")
     return df
 
-def generate_brainwave_means(df: pd.DataFrame) -> pd.DataFrame:
+def _generate_brainwave_means(df: pd.DataFrame) -> pd.DataFrame:
     df["Alpha_Mean"] = df[['Alpha_TP9', 'Alpha_AF7', 'Alpha_AF8', 'Alpha_TP10']].mean(axis=1)
     df["Beta_Mean"] = df[['Beta_TP9', 'Beta_AF7', 'Beta_AF8', 'Beta_TP10']].mean(axis=1)
     df["Gamma_Mean"] = df[['Gamma_TP9', 'Gamma_AF7', 'Gamma_AF8', 'Gamma_TP10']].mean(axis=1)
@@ -69,7 +69,7 @@ def generate_brainwave_means(df: pd.DataFrame) -> pd.DataFrame:
     df["Theta_Mean"] = df[['Theta_TP9', 'Theta_AF7', 'Theta_AF8', 'Theta_TP10']].mean(axis=1)
     return df
 
-def align_specific_signal(df: pd.DataFrame, base_signals: list[str], lagging_signal: str, max_lag: int = 8):
+def _align_specific_signal(df: pd.DataFrame, base_signals: list[str], lagging_signal: str, max_lag: int = 8):
     lags = np.arange(-max_lag, max_lag + 1)
     p_threshold = 0.05
 
@@ -125,16 +125,16 @@ def align_specific_signal(df: pd.DataFrame, base_signals: list[str], lagging_sig
     df[new_col] = df[new_col].shift(optimal_lag)
     return optimal_lag
 
-def align_lag_signals_subject(subject_df: pd.DataFrame) -> pd.DataFrame:
+def _align_lag_signals_subject(subject_df: pd.DataFrame) -> pd.DataFrame:
     base_signals = ["Alpha_Mean", "Delta_Mean", "Theta_Mean", "Beta_Mean", "Gamma_Mean"]
     lagging_signals = ["EDA", "BVP", "Temperature"]
     resmasknet_signals = ["resmasknet_happiness", "resmasknet_anger", "resmasknet_disgust", "resmasknet_fear", "resmasknet_sadness", "resmasknet_surprise", "resmasknet_neutral"]
 
     for lagging_signal in lagging_signals:
-        align_specific_signal(subject_df, base_signals, lagging_signal)
+        _align_specific_signal(subject_df, base_signals, lagging_signal)
     
     # All resmasknet signals are assumed to have the same lag so we just need to find the lag for one
-    resmasknet_lag = align_specific_signal(subject_df, base_signals, resmasknet_signals[0])
+    resmasknet_lag = _align_specific_signal(subject_df, base_signals, resmasknet_signals[0])
     if not np.isnan(resmasknet_lag):
         for resmasknet_signal in resmasknet_signals[1:]:
             col_name = f"{resmasknet_signal}_aligned"
@@ -149,7 +149,7 @@ def align_lag_signals(df: pd.DataFrame) -> pd.DataFrame:
     Aligns the body signals in the dataframe based correlation analysis
     """
 
-    df = generate_brainwave_means(df)
+    df = _generate_brainwave_means(df)
 
     # We found that aligning the body signals using per person and per signals is the best choice
     # Since the fastest signal are the brainwaves, those are assumed to be the baseline and other signals are moved
@@ -158,7 +158,7 @@ def align_lag_signals(df: pd.DataFrame) -> pd.DataFrame:
     subject_ids = df["Subject_ID"].unique()
     for subject_id in subject_ids:
         subject_df = df[df["Subject_ID"] == subject_id]
-        aligned_subject_df = align_lag_signals_subject(subject_df)
+        aligned_subject_df = _align_lag_signals_subject(subject_df)
         aligned_df = pd.concat([aligned_df, aligned_subject_df])
 
     return aligned_df
