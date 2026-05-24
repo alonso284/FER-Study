@@ -79,5 +79,36 @@ def normalize_signals_with_mediation_baseline(df: pd.DataFrame) -> pd.DataFrame:
     """
     Normalizes the relevant body signals in the dataframe based on analysis per person done using the meditation as a baseline
     """
-    # @AndresDlg562
-    return df
+    required_cols = {"Subject_ID", "Task_Num"}
+    if not required_cols.issubset(df.columns):
+        return df
+
+    signal_candidates = [
+        "EDA",
+        "BVP",
+    ]
+    signal_cols = [col for col in signal_candidates if col in df.columns]
+    if not signal_cols:
+        return df
+
+    baseline_task = 2.1 #Initial Meditation 
+    baseline_df = df[df["Task_Num"] == baseline_task]
+    if baseline_df.empty:
+        return df
+
+    baseline_means = (
+        baseline_df.groupby("Subject_ID")[signal_cols]
+        .mean()
+        .add_prefix("baseline_")
+    )
+
+    normalized = df.join(baseline_means, on="Subject_ID")
+    for col in signal_cols:
+        baseline_col = f"baseline_{col}"
+        normalized[col] = normalized[col].where(
+            normalized[baseline_col].isna(),
+            normalized[col] - normalized[baseline_col],
+        )
+
+    normalized = normalized.drop(columns=baseline_means.columns)
+    return normalized
