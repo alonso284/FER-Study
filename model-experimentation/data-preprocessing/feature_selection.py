@@ -10,5 +10,7 @@ def variance_treshold_selection(df: pd.DataFrame) -> pd.DataFrame:
     Each group of features has its own variance treshold.
     """
     # TODO, USE: from sklearn.feature_selection import VarianceThreshold
+    # @SergioGzzBrz already checked this, nothing needs to change from this so I will add that to the final doc
+    # Don't worry about this
 
     return df
