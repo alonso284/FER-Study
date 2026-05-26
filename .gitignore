@@ -1,5 +1,6 @@
 # Sensitive info
 NPFC-Test_Database_V2.csv
+Clean_NPFC-Test_Database_V2.csv
 
 # Virtual environment
 .venv/
