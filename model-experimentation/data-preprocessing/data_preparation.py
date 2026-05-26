@@ -33,7 +33,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     Changes string values to numerical values.
     """
     filtered_df = df[df["Face_Detection"] == 1]
-    filtered_df = df[df["HeadBandOn"] == 1]
+    filtered_df = filtered_df[filtered_df["HeadBandOn"] == 1]
     df_clean = filtered_df.copy()
 
     # Get the prediction value
@@ -53,7 +53,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     df_clean["resmasknet_dominant_emotion"] = df_clean[emotion_cols].idxmax(axis=1)
 
     # Clean neutral predictions
-    df_clean = df_clean[df_clean["resmasknet_dominant_emotion"] != "resmasknet_neutral"]
+    df_clean = df_clean[df_clean["resmasknet_dominant_emotion"] != "resmasknet_neutral_aligned"]
 
     df_clean["Perceived_Tiredness"] = (
         df_clean["Perceived_Tiredness"].map(PERCEIVED_TIREDNESS).astype("Int64")
