@@ -27,14 +27,16 @@ GENDER = {
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     """
+    Created the prediction labels that will be used for model training.
     Cleans the data by handling missing values, NaN, etc.
     In addition, removes rows with neutral predictions (50~ % of the data) to avoid inflated confidence on trivial predictions.
-    Also changes string values to numerical values
+    Changes string values to numerical values.
     """
-    df = df[df["Face_Detection"] == 1]
-    df = df[df["HeadBandOn"] == 1]
+    filtered_df = df[df["Face_Detection"] == 1]
+    filtered_df = df[df["HeadBandOn"] == 1]
+    df_clean = filtered_df.copy()
 
-    # Get the certainty o prediction
+    # Get the prediction value
     emotion_cols = [
         "resmasknet_anger_aligned",
         "resmasknet_disgust_aligned",
@@ -45,26 +47,25 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
         "resmasknet_neutral_aligned",
     ]
 
-    # Due to lag shifting, some rows are all NA and need to be handled
-    valid_mask = df[emotion_cols].notna().any(axis=1)
-    df["resmasknet_max_emotion_value"] = np.nan
-    df["resmasknet_dominant_emotion"] = ""
+    df_clean = df_clean.dropna(subset=emotion_cols, how="all")
 
-    df.loc[valid_mask, "resmasknet_max_emotion_value"] = df.loc[valid_mask, emotion_cols].max(axis=1)
-    df.loc[valid_mask, "resmasknet_dominant_emotion"] = df.loc[valid_mask, emotion_cols].idxmax(axis=1)
+    df_clean["resmasknet_max_emotion_value"] = df_clean[emotion_cols].max(axis=1)
+    df_clean["resmasknet_dominant_emotion"] = df_clean[emotion_cols].idxmax(axis=1)
 
     # Clean neutral predictions
-    df = df[df["resmasknet_dominant_emotion"] != "resmasknet_neutral_aligned"]
+    df_clean = df_clean[df_clean["resmasknet_dominant_emotion"] != "resmasknet_neutral"]
 
-    df["Perceived_Tiredness"] = (
-        df["Perceived_Tiredness"].map(PERCEIVED_TIREDNESS).astype("Int64")
+    df_clean["Perceived_Tiredness"] = (
+        df_clean["Perceived_Tiredness"].map(PERCEIVED_TIREDNESS).astype("Int64")
     )
-    df["Perceived_Stress"] = (
-        df["Perceived_Stress"].map(PERCEIVED_STRESS).astype("Int64")
+    df_clean["Perceived_Stress"] = (
+        df_clean["Perceived_Stress"].map(PERCEIVED_STRESS).astype("Int64")
     )
-    df["Gender"] = df["Gender"].map(GENDER).astype("Int64")
-    df["Wearing_Glasses"] = df["Wearing_Glasses"].map(WEARING_GLASSES).astype("Int64")
-    return df
+    df_clean["Gender"] = df_clean["Gender"].map(GENDER).astype("Int64")
+    df_clean["Wearing_Glasses"] = (
+        df_clean["Wearing_Glasses"].map(WEARING_GLASSES).astype("Int64")
+    )
+    return df_clean
 
 def _generate_brainwave_means(df: pd.DataFrame) -> pd.DataFrame:
     df["Alpha_Mean"] = df[['Alpha_TP9', 'Alpha_AF7', 'Alpha_AF8', 'Alpha_TP10']].mean(axis=1)
@@ -179,5 +180,36 @@ def normalize_signals_with_mediation_baseline(df: pd.DataFrame) -> pd.DataFrame:
     """
     Normalizes the relevant body signals in the dataframe based on analysis per person done using the meditation as a baseline
     """
-    # @AndresDlg562
-    return df
+    required_cols = {"Subject_ID", "Task_Num"}
+    if not required_cols.issubset(df.columns):
+        return df
+
+    signal_candidates = [
+        "EDA",
+        "BVP",
+    ]
+    signal_cols = [col for col in signal_candidates if col in df.columns]
+    if not signal_cols:
+        return df
+
+    baseline_task = 2.1 #Initial Meditation 
+    baseline_df = df[df["Task_Num"] == baseline_task]
+    if baseline_df.empty:
+        return df
+
+    baseline_means = (
+        baseline_df.groupby("Subject_ID")[signal_cols]
+        .mean()
+        .add_prefix("baseline_")
+    )
+
+    normalized = df.join(baseline_means, on="Subject_ID")
+    for col in signal_cols:
+        baseline_col = f"baseline_{col}"
+        normalized[col] = normalized[col].where(
+            normalized[baseline_col].isna(),
+            normalized[col] - normalized[baseline_col],
+        )
+
+    normalized = normalized.drop(columns=baseline_means.columns)
+    return normalized
