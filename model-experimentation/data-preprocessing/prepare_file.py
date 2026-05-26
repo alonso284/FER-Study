@@ -3,7 +3,7 @@ import data_preparation
 import time
 
 def generate_prepared_file(file_name: str = "../Clean_NPFC-TEST_Database_V2.csv"):
-  df = pd.read_csv('../../NPFC-Test_Database_V2.csv')
+  df = pd.read_csv('../NPFC-Test_Database_V2.csv')
 
   print("Preparing data file (this can take a few minutes)...")
 
