@@ -18,5 +18,5 @@ Run all notebooks within venv
 
 # Folders
 
-First deliverable -> exploratory-analysis folder
-Second deliverable -> model-experimentation folder
+- First deliverable -> exploratory-analysis folder
+- Second deliverable -> model-experimentation folder
