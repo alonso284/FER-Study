@@ -9,7 +9,6 @@ Clean_NPFC-Test_Database_V2.csv
 cache/
 __pycache__/
 outputs/figures/*
-final-models/figures/*
 *.html
 
 # Model artifacts (downloaded at runtime by rmn/deepface)
