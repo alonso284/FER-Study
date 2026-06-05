@@ -20,3 +20,4 @@ Run all notebooks within venv
 
 - First deliverable -> exploratory-analysis folder
 - Second deliverable -> model-experimentation folder
+- Final deliverable -> final-models
